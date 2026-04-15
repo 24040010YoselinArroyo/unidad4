@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>API Mashup Dashboard v5.0</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<header class="header-gradient sticky top-0 z-20 backdrop-blur-md bg-white/90">
+  <div class="max-w-screen-2xl mx-auto px-6 py-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-800 tracking-tight">API Mashup Dashboard</h1>
+          <p class="text-xs text-slate-400">6 APIs integradas · Apple Music · iTunes Store · Reddit · Firebase · Maps · SMS</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="flex items-center gap-2">
+          <span class="live-dot"></span>
+          <span class="text-xs font-medium text-slate-600">Sistema Online</span>
+        </div>
+        <div class="font-mono text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full" id="header-clock">--:--:--</div>
+        <div class="badge-modern">SALTILLO · MX</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-screen-2xl mx-auto px-4 py-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+
+
+    <div class="card-modern">
+      <div class="card-header-modern flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="live-dot"></span>
+          <h2 class="font-semibold text-slate-800">📍 Geolocalización</h2>
+        </div>
+        <span class="badge-modern">OpenStreetMap</span>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div style="border-radius:14px;overflow:hidden;border:1px solid #eef2f8">
+          <div id="leaflet-map"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">LAT</p><p class="font-mono text-sm font-semibold text-slate-700" id="disp-lat">25.5535</p></div>
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">LON</p><p class="font-mono text-sm font-semibold text-slate-700" id="disp-lon">-100.932</p></div>
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">PREC</p><p class="font-mono text-sm font-semibold text-slate-700" id="disp-acc">---</p></div>
+        </div>
+        <div class="flex gap-2">
+          <input class="input-modern flex-1" id="geo-input" placeholder="Buscar: plaza, hospital, banco..."/>
+          <button class="btn-modern btn-primary" onclick="geoSearch()">🔍</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="btn-modern btn-secondary text-xs" onclick="geoFilter('supermercado')">🛒 Super</button>
+          <button class="btn-modern btn-secondary text-xs" onclick="geoFilter('hospital')">🏥 Hospital</button>
+          <button class="btn-modern btn-secondary text-xs" onclick="geoFilter('gasolinera')">⛽ Gas</button>
+          <button class="btn-modern btn-secondary text-xs" onclick="geoFilter('restaurante')">🍔 Resto</button>
+          <button class="btn-modern btn-primary text-xs" onclick="getMyLocation()">📍 Mi ubicación</button>
+        </div>
+        <div id="geo-status" class="text-xs text-slate-500 min-h-4"></div>
+      </div>
+    </div>
+
+    <div class="card-modern">
+      <div class="card-header-modern flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="live-dot" style="background:#fc3c44;animation:pulseDot 2s infinite"></span>
+          <h2 class="font-semibold text-slate-800">🎵 Apple Music</h2>
+        </div>
+        <span class="badge-modern" style="background:#fff1f2;color:#be123c">iTunes API ✅</span>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="flex gap-2">
+          <input class="input-modern flex-1" id="am-search" placeholder="Buscar canción, artista, álbum..." onkeydown="if(event.key==='Enter')amSearch()"/>
+          <button class="btn-modern" style="background:linear-gradient(135deg,#fc3c44,#ff6b9d);color:white" onclick="amSearch()">🔍</button>
+        </div>
+        <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
+          <button class="am-tab flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all active" id="am-tab-song" onclick="amSetType('song','music')">🎵 Canciones</button>
+          <button class="am-tab flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all" id="am-tab-musicArtist" onclick="amSetType('musicArtist','music')" style="color:#64748b">🎤 Artistas</button>
+          <button class="am-tab flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all" id="am-tab-album" onclick="amSetType('album','music')" style="color:#64748b">💿 Álbumes</button>
+        </div>
+        <div id="am-list" class="flex flex-col gap-2 overflow-y-auto" style="max-height:280px">
+          <div class="flex justify-center py-6"><div class="spinner" style="border-top-color:#fc3c44"></div></div>
+        </div>
+        <div id="am-detail" class="hidden flex flex-col gap-3">
+          <button onclick="amBackToList()" class="btn-modern btn-secondary text-xs self-start">← Volver</button>
+          <div class="flex gap-3 items-start">
+            <img id="am-d-img" class="w-20 h-20 rounded-xl object-cover bg-slate-100 flex-shrink-0"/>
+            <div class="flex-1 min-w-0">
+              <p id="am-d-name" class="font-semibold text-slate-800 leading-snug mb-1"></p>
+              <p id="am-d-artist" class="text-sm font-medium mb-1" style="color:#fc3c44"></p>
+              <p id="am-d-price" class="text-lg font-bold"></p>
+            </div>
+          </div>
+          <div id="am-player-wrap" class="hidden">
+            <div style="background:linear-gradient(135deg,#fff1f2,#fce7f3);border:1px solid #fecdd3;border-radius:12px;padding:10px">
+              <p class="text-xs font-semibold mb-2" style="color:#be123c">▶ Preview — 30 segundos</p>
+              <audio id="am-audio" controls autoplay style="width:100%;height:32px;border-radius:8px"></audio>
+            </div>
+          </div>
+          <a id="am-d-link" href="#" target="_blank" class="btn-modern w-full justify-center" style="background:linear-gradient(135deg,#fc3c44,#ff6b9d);color:white;text-decoration:none">
+            Abrir en Apple Music
+          </a>
+        </div>
+        <div class="flex justify-between items-center pt-1 border-t border-slate-100">
+          <span class="text-xs text-slate-400" id="am-count">Cargando...</span>
+          <span class="badge-modern" style="background:#fff1f2;color:#be123c;font-size:.65rem">iTunes Search API</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-modern">
+      <div class="card-header-modern flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="live-dot" style="background:#16a34a;animation:pulseDot 2s infinite"></span>
+          <h2 class="font-semibold text-slate-800">🛒 iTunes Store</h2>
+        </div>
+        <span class="badge-modern" style="background:#dcfce7;color:#15803d">Compras en Apple ✅</span>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="flex gap-2">
+          <input class="input-modern flex-1" id="store-search" placeholder="Buscar música, películas, apps, libros..." value="Taylor Swift" onkeydown="if(event.key==='Enter')storeSearch()"/>
+          <button class="btn-modern" style="background:#16a34a;color:white" onclick="storeSearch()">🔍</button>
+        </div>
+        <div class="flex gap-1 bg-slate-100 p-1 rounded-xl flex-wrap">
+          <button class="flex-1 py-1.5 rounded-lg text-xs font-medium store-tab active" id="store-tab-music" onclick="storeSetType('music')" style="background:#16a34a;color:white">🎵 Música</button>
+          <button class="flex-1 py-1.5 rounded-lg text-xs font-medium store-tab" id="store-tab-movie" onclick="storeSetType('movie')" style="background:transparent;color:#64748b">🎬 Películas</button>
+          <button class="flex-1 py-1.5 rounded-lg text-xs font-medium store-tab" id="store-tab-ebook" onclick="storeSetType('ebook')" style="background:transparent;color:#64748b">📚 Libros</button>
+          <button class="flex-1 py-1.5 rounded-lg text-xs font-medium store-tab" id="store-tab-podcast" onclick="storeSetType('podcast')" style="background:transparent;color:#64748b">🎙 Podcasts</button>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">RESULTADOS</p><p class="font-bold text-lg text-green-600" id="store-count">0</p></div>
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">PRECIOS</p><p class="text-xs font-bold text-green-600" id="store-price-range">---</p></div>
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">CATEGORÍA</p><p class="text-xs font-bold text-blue-600" id="store-cat">Música</p></div>
+        </div>
+        <div id="store-list" class="flex flex-col gap-2 overflow-y-auto" style="max-height:280px">
+          <div class="flex justify-center py-6"><div class="spinner" style="border-top-color:#16a34a"></div></div>
+        </div>
+        <div id="store-detail" class="hidden flex flex-col gap-3">
+          <button onclick="storeBackToList()" class="btn-modern btn-secondary text-xs self-start">← Volver</button>
+          <div class="flex gap-3 items-start">
+            <img id="store-d-img" class="w-20 h-20 rounded-xl object-cover bg-slate-100 flex-shrink-0"/>
+            <div class="flex-1 min-w-0">
+              <p id="store-d-name" class="font-semibold text-slate-800 leading-snug mb-1"></p>
+              <p id="store-d-artist" class="text-sm font-medium mb-1" style="color:#16a34a"></p>
+              <p id="store-d-price" class="text-lg font-bold text-green-600 mb-2"></p>
+              <div id="store-d-preview" class="hidden mb-2">
+                <audio id="store-audio" controls class="w-full h-8"></audio>
+              </div>
+              <a id="store-d-link" href="#" target="_blank" class="btn-modern w-full justify-center" style="background:#16a34a;color:white;text-decoration:none">
+                🛒 Comprar en iTunes Store
+              </a>
+            </div>
+          </div>
+          <p id="store-d-desc" class="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl max-h-24 overflow-y-auto"></p>
+        </div>
+        <div class="flex justify-between items-center pt-1 border-t border-slate-100">
+          <span class="text-xs text-slate-400" id="store-status">Busca música, películas, apps, libros...</span>
+          <span class="badge-modern" style="background:#dcfce7;color:#15803d;font-size:.65rem">iTunes Store · Compra Real</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-modern">
+      <div class="card-header-modern flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="live-dot live-dot-red"></span>
+          <h2 class="font-semibold text-slate-800">🤖 Reddit</h2>
+        </div>
+        <span class="badge-modern badge-live" id="rd-status-badge">Cargando...</span>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="grid grid-cols-3 gap-2">
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">POSTS</p><p class="font-bold text-lg text-orange-600" id="rd-count">0</p></div>
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">SUBREDDIT</p><p class="font-mono text-xs font-bold text-orange-600" id="rd-current-sub">r/mexico</p></div>
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">ACTUALIZADO</p><p class="text-xs font-mono font-semibold text-green-600" id="rd-update-time">--:--</p></div>
+        </div>
+        <div class="flex gap-2">
+          <div class="input-modern flex items-center gap-1 py-2 px-3" style="flex:1">
+            <span class="text-xs text-orange-500 font-bold font-mono flex-shrink-0">r/</span>
+            <input id="rd-sub-input" placeholder="mexico, programming, gaming..." class="bg-transparent outline-none flex-1 text-sm" onkeydown="if(event.key==='Enter')rdLoadSub()"/>
+          </div>
+          <button class="btn-modern" style="background:#f97316;color:white" onclick="rdLoadSub()">IR →</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="btn-modern btn-secondary text-xs" onclick="rdQuick('mexico')">🇲🇽 mexico</button>
+          <button class="btn-modern btn-secondary text-xs" onclick="rdQuick('programming')">💻 code</button>
+          <button class="btn-modern btn-secondary text-xs" onclick="rdQuick('worldnews')">🌍 world</button>
+          <button class="btn-modern btn-secondary text-xs" onclick="rdQuick('gaming')">🎮 gaming</button>
+        </div>
+        <div class="flex gap-2 items-center">
+          <button class="btn-modern rd-tab text-xs active" id="rd-sort-hot" onclick="rdSetSort('hot')">🔥 HOT</button>
+          <button class="btn-modern btn-secondary rd-tab text-xs" id="rd-sort-new" onclick="rdSetSort('new')">✨ NEW</button>
+          <button class="btn-modern btn-secondary rd-tab text-xs" id="rd-sort-top" onclick="rdSetSort('top')">🏆 TOP</button>
+          <button class="btn-modern btn-secondary text-xs ml-auto" onclick="rdRefresh()">↻</button>
+        </div>
+        <div id="rd-feed" class="flex flex-col gap-2 overflow-y-auto" style="max-height:300px">
+          <div class="flex justify-center py-6"><div class="spinner" style="border-top-color:#f97316"></div></div>
+        </div>
+        <div id="rd-expanded" class="hidden p-3 bg-orange-50 rounded-xl border border-orange-200">
+          <div class="flex justify-between items-center mb-2"><span id="rd-exp-sub" class="text-xs font-bold text-orange-600"></span><button onclick="document.getElementById('rd-expanded').classList.add('hidden')" class="text-slate-400">✕</button></div>
+          <p id="rd-exp-title" class="font-semibold text-sm text-slate-800 mb-2 leading-snug"></p>
+          <p id="rd-exp-body" class="text-xs text-slate-600 mb-2 leading-relaxed max-h-20 overflow-y-auto"></p>
+          <div class="flex gap-4 items-center"><span id="rd-exp-ups" class="text-xs font-semibold text-orange-600"></span><span id="rd-exp-coms" class="text-xs text-slate-500"></span><a id="rd-exp-link" href="#" target="_blank" class="text-xs font-semibold text-blue-500 ml-auto">Ver en Reddit →</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-modern">
+      <div class="card-header-modern flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="live-dot" style="background:#f59e0b;animation:pulseDot 2s infinite"></span>
+          <h2 class="font-semibold text-slate-800">🔥 Firebase Cloud DB</h2>
+        </div>
+        <span class="badge-modern" style="background:#fef3c7;color:#b45309">Firestore API ✅</span>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="grid grid-cols-3 gap-2">
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">DOCS</p><p class="font-bold text-lg text-amber-600" id="db-count">0</p></div>
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">COLECCIÓN</p><p class="text-xs font-mono font-semibold text-amber-600">usuarios</p></div>
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">STATUS</p><p class="text-xs font-semibold text-green-600" id="fb-status">Conectando...</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <input class="input-modern" id="db-nombre" placeholder="👤 Nombre"/>
+          <input class="input-modern" id="db-valor" placeholder="📄 Dato / valor"/>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-modern btn-primary flex-1" style="background:#f59e0b" onclick="dbInsert()">🔥 Guardar en Firebase</button>
+          <button class="btn-modern btn-secondary" onclick="dbLoadAll()">↻ Recargar</button>
+          <button class="btn-modern btn-danger" onclick="dbDropSelected()">🗑 Eliminar Todos</button>
+        </div>
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <div class="overflow-auto" style="max-height:160px">
+            <table class="db-table">
+              <thead><tr><th>#</th><th>NOMBRE</th><th>DATO</th><th>ID</th><th></th></tr></thead>
+              <tbody id="db-tbody"><tr><td colspan="5" class="text-center py-6 text-slate-400 text-xs">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="db-terminal" class="p-2 bg-slate-900 rounded-xl font-mono text-xs text-green-400 max-h-16 overflow-y-auto">> Firebase Firestore iniciando...</div>
+      </div>
+    </div>
+
+    <div class="card-modern">
+      <div class="card-header-modern flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="live-dot" style="background:#0891b2;animation:pulseDot 2s infinite"></span>
+          <h2 class="font-semibold text-slate-800">📱 Protocolo SMS</h2>
+        </div>
+        <span class="badge-modern" style="background:#cffafe;color:#0e7490">Twilio Gateway (SIM)</span>
+      </div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="stat-card text-center"><p class="text-xs text-slate-500 mb-1">ENVIADOS</p><p class="text-3xl font-bold text-cyan-600" id="sms-count">0</p></div>
+          <div class="stat-card"><p class="text-xs text-slate-500 mb-1">GATEWAY</p><p class="text-sm font-semibold text-green-600">ONLINE</p></div>
+        </div>
+        <div class="input-modern flex items-center gap-2 py-2">
+          <span class="text-xs text-slate-400 font-semibold">TO:</span>
+          <input id="sms-phone" placeholder="+52 844 xxx xxxx" class="bg-transparent outline-none flex-1 text-sm"/>
+        </div>
+        <div class="relative">
+          <textarea class="input-modern" id="sms-msg" rows="3" placeholder="Escribe tu mensaje SMS... (máx 160 caracteres)"></textarea>
+          <span id="sms-chars" class="absolute bottom-2 right-3 text-xs text-slate-400">0/160</span>
+        </div>
+        <button class="btn-modern w-full justify-center" style="background:#0891b2;color:white" onclick="smsSend()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 6px;">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          ENVIAR SMS VÍA API (SIM)
+        </button>
+        <div id="sms-req-display" class="hidden mt-2 p-2 bg-slate-800 rounded-xl font-mono text-xs">
+          <span class="text-slate-400">// HTTP REQUEST (SIMULADO)</span><br>
+          <span class="text-orange-400">POST</span> <span class="text-cyan-400">https://api.twilio.com/2010-04-01/Accounts/.../Messages</span><br>
+          <span class="text-slate-400">Authorization:</span> <span class="text-yellow-400">Bearer [TOKEN]</span><br>
+          <span class="text-slate-400">To:</span> <span id="sms-req-to" class="text-green-400"></span><br>
+          <span class="text-slate-400">Body:</span> <span id="sms-req-body" class="text-green-400"></span><br>
+          <span id="sms-req-resp" class="text-green-400"></span>
+        </div>
+        <div class="mt-3">
+          <p class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">📨 BANDEJA DE SALIDA</p>
+          <div id="sms-inbox" class="flex flex-col gap-2 overflow-y-auto max-h-48 pr-1">
+            <div class="text-center text-xs text-slate-400 py-4">— Sin mensajes enviados —</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="border-t border-slate-200 mt-8 py-4 text-center">
+  <p class="text-xs text-slate-400">API Mashup Dashboard v5.0 © 2025 · OpenStreetMap · Apple Music · iTunes Store · Reddit · Firebase · Twilio (SIM)</p>
+</footer>
+
+<script type="module" src="js/database.js"></script>
+
+<script src="app.js"></script>
+<script src="js/geolocation.js"></script>
+<script src="js/social.js"></script>
+<script src="js/ecommerce.js"></script>
+<script src="js/sms.js"></script>
+<script src="js/streaming.js"></script>
+
+</body>
+</html>
